@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IP Reputation Checker | SecurityTool</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --danger: #f72585;
+            --success: #4cc9f0;
+            --dark: #212529;
+            --light: #f8f9fa;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo-icon {
+            font-size: 2rem;
+            margin-right: 0.75rem;
+            color: var(--primary);
+        }
+        
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--dark);
+        }
+        
+        .search-box {
+            display: flex;
+            margin-bottom: 2rem;
+            gap: 10px;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .search-btn {
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: background 0.3s;
+        }
+        
+        .search-btn:hover {
+            background-color: var(--secondary);
+        }
+        
+        .result-container {
+            display: none;
+            margin-top: 2rem;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .ip-address {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        
+        .risk-score {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 700;
+            background-color: #e9ecef;
+        }
+        
+        .risk-score.low {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .risk-score.medium {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+        
+        .risk-score.high {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        
+        .details-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .detail-card {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+        }
+        
+        .detail-label {
+            font-size: 0.875rem;
+            color: #6c757d;
+            margin-bottom: 0.25rem;
+        }
+        
+        .detail-value {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            color: var(--danger);
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <div class="logo-icon">🛡️</div>
+                <div class="logo-text">IP Reputation Checker</div>
+            </div>
+        </header>
+        
+        <h1>Check IP Address Reputation</h1>
+        
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="Enter IP address (e.g. 20.205.243.166)" value="20.205.243.166">
+            <button class="search-btn">Check</button>
+        </div>
+        
+        <div class="error-message"></div>
+        
+        <div class="loading">
+            <div class="spinner"></div>
+            <p>Analyzing IP address...</p>
+        </div>
+        
+        <div class="result-container">
+            <div class="result-header">
+                <div class="ip-address"></div>
+                <div class="risk-score"></div>
+            </div>
+            
+            <div class="details-grid">
+                <div class="detail-card">
+                    <div class="detail-label">Abuse Confidence</div>
+                    <div class="detail-value" id="abuseScore"></div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Country</div>
+                    <div class="detail-value" id="country"></div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">ISP</div>
+                    <div class="detail-value" id="isp"></div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Domain</div>
+                    <div class="detail-value" id="domain"></div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">IP Type</div>
+                    <div class="detail-value" id="ipType"></div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Usage Type</div>
+                    <div class="detail-value" id="usageType"></div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Last Reported</div>
+                    <div class="detail-value" id="lastReported"></div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Total Reports</div>
+                    <div class="detail-value" id="totalReports"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('.search-btn').click(function() {
+                checkIP();
+            });
+            
+            $('.search-input').keypress(function(e) {
+                if (e.which === 13) {
+                    checkIP();
+                }
+            });
+            
+            // Initial check for the default IP
+            checkIP();
+        });
+        
+        function checkIP() {
+            const ip = $('.search-input').val().trim();
+            
+            if (!ip) {
+                showError('Please enter an IP address');
+                return;
+            }
+            
+            // Validate IP format (simple version)
+            if (!/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ip)) {
+                showError('Please enter a valid IPv4 address');
+                return;
+            }
+            
+            $('.error-message').hide();
+            $('.result-container').hide();
+            $('.loading').show();
+            
+            $.ajax({
+                method: "POST",
+                url: "proxy.php",
+                data: {
+                    ipAddress: ip,
+                    maxAgeInDays: "90"
+                },
+                success: function(data) {
+                    $('.loading').hide();
+                    
+                    if (data && data.data) {
+                        displayResults(data.data);
+                    } else {
+                        showError('Invalid response from server');
+                    }
+                },
+                error: function(xhr) {
+                    $('.loading').hide();
+                    showError(xhr.responseJSON?.error || 'Failed to fetch IP data');
+                }
+            });
+        }
+        
+        function displayResults(data) {
+            $('.ip-address').text(data.ipAddress);
+            
+            // Set risk score with appropriate class
+            const scoreElement = $('.risk-score');
+            scoreElement.text(`Risk: ${data.abuseConfidenceScore}/100`);
+            
+            if (data.abuseConfidenceScore >= 75) {
+                scoreElement.addClass('high').removeClass('medium low');
+            } else if (data.abuseConfidenceScore >= 25) {
+                scoreElement.addClass('medium').removeClass('high low');
+            } else {
+                scoreElement.addClass('low').removeClass('high medium');
+            }
+            
+            // Fill in details
+            $('#abuseScore').text(`${data.abuseConfidenceScore}/100`);
+            $('#country').text(data.countryCode || 'Unknown');
+            $('#isp').text(data.isp || 'Unknown');
+            $('#domain').text(data.domain || 'Unknown');
+            $('#ipType').text(data.isPublic ? 'Public' : 'Private');
+            $('#usageType').text(data.usageType || 'Unknown');
+            $('#lastReported').text(data.lastReportedAt ? new Date(data.lastReportedAt).toLocaleString() : 'Never');
+            $('#totalReports').text(data.totalReports || '0');
+            
+            $('.result-container').show();
+        }
+        
+        function showError(message) {
+            $('.error-message').text(message).show();
+            $('.loading').hide();
+        }
+    </script>
+</body>
+</html>
